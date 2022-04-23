@@ -1,4 +1,13 @@
 10,A,B,20,helmet
+20,C,A,30,item9
 45,C,A,40,heart
 25,D,C,40,braceletR
 30,D,C,40,braceletL
+20,B,C,10,item1
+20,B,D,10,item2
+120,A,B,10,item3
+140,A,B,10,item4
+200,C,D,10,item5
+230,D,A,10,item6
+230,D,A,10,item7
+235,D,A,10,item8

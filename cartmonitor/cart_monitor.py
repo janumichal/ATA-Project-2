@@ -79,8 +79,6 @@ def onloading(time, pos, content, weight, slot):
             print("%d:error: loading content: \"%s\" without request in station: \"%s\"" % (int(time), content, pos))
             err_val = True
         
-        
-
 def onunloading(time, pos, content, weight, slot):
     global err_val
     if(len(cart_slots) != 0 and cart_slots[int(slot)] == ()):
