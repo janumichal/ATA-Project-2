@@ -9,7 +9,7 @@ import itertools
 slots = 4
 w_capacity = 150
 stations = Jarvis.get_tracks().stations()
-cart_slots = [() for i in range(slots)]
+cart_slots = []
 requests = []
 global err_val
 err_val = False
@@ -45,53 +45,84 @@ def report_coverage():
 def onmoving(time, pos1, pos2):
     global err_val
     "priklad event-handleru pro udalost moving"
-    for tpl in cart_slots:
-        if(tpl != ()):
-            _, pos, content, _ = tpl
-            if(pos == pos1):
-                print("%d:error: content: \"%s\" was not unloaded in station: \"%s\"" % (int(time), content, pos))
+    if(len(cart_slots)> 0):
+        for _, tpl in cart_slots:
+            pos_src, pos_dst, content, weight = tpl
+            if(pos_dst != None and pos_dst == pos1):
+                requests.remove((pos_src, pos_dst, content, weight))
+                print("%d:error: content: \"%s\" was not unloaded in station: \"%s\"" % (int(time), content, pos_dst))
                 err_val = True
 
 def onloading(time, pos, content, weight, slot):
     global err_val
+    pos_dst = None
+    
     if(int(slot) >= slots):
         print("%d:error: loading over cart slot capacity." % int(time))
         err_val = True
     else:
         set_covered(pos, int(slot))
-        if(len(cart_slots) != 0 and cart_slots[int(slot)] != ()):
-            print("%d:error: loading into an occupied slot #%d" % (int(time), int(slot)))
-            err_val = True
-        found = False
+        if(len(cart_slots) > 0):
+            for idx, _ in cart_slots:
+                if(idx == int(slot)):
+                    print("%d:error: loading into an occupied slot #%d" % (int(time), int(slot)))
+                    err_val = True
+                    break
         for pos1, pos2, content_r, weight_r in requests:
             if(pos1 == pos and content == content_r and weight == weight_r):
-                found = True
+                pos_dst = pos2
                 w_counter = 0
-                for sl in cart_slots:
-                    if(sl != ()):
+                if(len(cart_slots) > 0):
+                    for _, sl in cart_slots:
                         _, _, _, w = sl
                         w_counter += int(w)
                 if(w_counter + int(weight_r) > w_capacity):
                     print("%d:error: loading content: \"%s\" over cart weight capacity: \"%d\"" % (int(time), content, w_capacity))
                     err_val = True
-                cart_slots[int(slot)] = (pos1, pos2, content_r, weight_r)
-        if(found == False):
+        if(pos_dst == None):
             print("%d:error: loading content: \"%s\" without request in station: \"%s\"" % (int(time), content, pos))
             err_val = True
+        cart_slots.append((int(slot),(pos, pos_dst, content, weight)))
+        
         
 def onunloading(time, pos, content, weight, slot):
     global err_val
-    if(len(cart_slots) != 0 and cart_slots[int(slot)] == ()):
-        print("%d:error: unloading from an unoccupied slot #%d" % (int(time), int(slot)))
-        err_val = True
-    for pos1, pos2, content_r, weight_r in requests:
-        if(pos == pos1 and content == content_r and weight == weight_r):
-            requests.remove((pos, pos2, content, weight))
-            
-    cart_slots[int(slot)] = ()
+    if(int(slot) < slots):
+        if(len(cart_slots) > 0):
+            found = False
+            counter = 0
+            for idx, tpl in cart_slots:
+                _, _, cnt, _ = tpl
+                if(idx == int(slot) and cnt == content):
+                    found = True
+                    del cart_slots[counter]
+                    break
+                counter += 1
+            if(not found):
+                print("%d:error: unloading from an unoccupied slot #%d" % (int(time), int(slot)))
+                err_val = True
+        
+        for pos1, pos2, content_r, weight_r in requests:
+            if(pos == pos2 and content == content_r):
+                requests.remove((pos1, pos, content, weight_r))
+                break
+        
 
 def onrequesting(time, pos1, pos2, content, weight):
     requests.append((pos1, pos2, content, weight))
+
+def onstop(time):
+    global err_val
+    if(len(requests) > 0):
+        for _, pos2, content_r, _ in requests:
+            if(len(cart_slots)>0):
+                for _, tpl in cart_slots:
+                    _, pos_dst, cnt, _ = tpl
+                if(pos_dst == pos2 and cnt == content_r):
+                    print("%d:error: content: \"%s\" was not unloaded in station: \"%s\"" % (int(time), content_r, pos2))
+                    err_val = True
+    if(err_val == False):
+        print("All properties hold.")
 
 def onevent(event):
     "Event handler. event = [TIME, EVENT_ID, ...]"
@@ -112,8 +143,8 @@ def onevent(event):
     elif event_id == "requesting":
         onrequesting(*event)
     elif event_id == "stop":
-        if(err_val == False):
-            print("All properties hold.")
+        onstop(*event)
+        
 
 ###########################################################
 # Nize netreba menit.
