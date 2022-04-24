@@ -46,10 +46,11 @@ def onmoving(time, pos1, pos2):
     global err_val
     "priklad event-handleru pro udalost moving"
     if(len(cart_slots)> 0):
-        for _, tpl in cart_slots:
+        for idx, tpl in cart_slots:
             pos_src, pos_dst, content, weight = tpl
             if(pos_dst != None and pos_dst == pos1):
                 requests.remove((pos_src, pos_dst, content, weight))
+                cart_slots.remove((idx, tpl))
                 print("%d:error: content: \"%s\" was not unloaded in station: \"%s\"" % (int(time), content, pos_dst))
                 err_val = True
 
