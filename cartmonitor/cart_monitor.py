@@ -2,13 +2,17 @@
 """
 Dynamic analyser of a cart controller.
 """
-from email import contentmanager
-from jarvisenv import Jarvis 
+
 import itertools
+stations = []
+try:
+    from jarvisenv import Jarvis
+    stations = Jarvis.get_tracks().stations()
+except ModuleNotFoundError:
+    stations = ["A","B","C","D"]
 
 slots = 4
 w_capacity = 150
-stations = Jarvis.get_tracks().stations()
 cart_slots = []
 requests = []
 global err_val
